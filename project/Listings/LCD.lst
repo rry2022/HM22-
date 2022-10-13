@@ -1,0 +1,378 @@
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE LCD
+OBJECT MODULE PLACED IN .\Objects\LCD.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE LCD.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\LCD
+                    -.lst) TABS(2) OBJECT(.\Objects\LCD.obj)
+
+line level    source
+
+   1          //#include <intrins.h>
+   2          #include "global.h"
+   3          
+   4          /*地址 
+   5          Hour_shiwei：0xc0       Hour_gewei：0xc2
+   6          Min_shiwei: 0x04        Min_gewei: 0x06
+   7          PROG:s1-s2   CLEAN:s3-s5    AM:s6    PM:s7      s:0xc8
+   8          TIME SINCE BREW:t1-t6    ":"：t7                t:0xca          
+   9          */
+  10          
+  11          uchar code LED_Table[11] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x00}; //共阴极
+  12          
+  13          void LED_SendData(uchar Data, bit flag);     //给TM1602发送一个8位的数据
+  14          void LED_SetData(uchar Address, uchar Data); //更改某个LED状态
+  15          void StorageData(uchar num, uchar *Address_H, uchar *Address_L, bit num_type); //处理数据
+  16          void LED_Update(); //刷新屏幕
+  17          void LED_Flash();
+  18          
+  19          
+  20          //=============================================LED实时显示================================================
+             -===
+  21          void LED_Display()  
+  22          { 
+  23   1        if(F_setTime)  //设置模式
+  24   1        {
+  25   2          if(!F_Set_flash)
+  26   2          {
+  27   3            F_Close_Prog = 0;
+  28   3            F_Close_Clean = 0;
+  29   3            F_Close_TSB = 0;
+  30   3            F_Close_AMPM = 0;
+  31   3            F_Close_Sec = 1; 
+  32   3            F_Close_Time = 0;  
+  33   3          }
+  34   2          else
+  35   2          {
+  36   3            LED_Flash();
+  37   3            if(F_ProgFlash)
+  38   3            {
+  39   4              LED_PROG = ~flash;
+  40   4            }     
+  41   3            if(F_BREFFlash)
+  42   3            {
+  43   4              LED_BREF_OFF = ~flash;
+  44   4            }
+  45   3          }   
+  46   2        }
+  47   1        
+  48   1          
+  49   1        else if(F_ShowPROG)
+  50   1        {
+  51   2          F_Close_Prog = 0;
+  52   2          F_Close_Clean = 0;
+  53   2          F_Close_TSB = 0;
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 2   
+
+  54   2          F_Close_AMPM = 0;
+  55   2          F_Close_Sec = 1; 
+  56   2          F_Close_Time = 0;  
+  57   2          DisplayTime_Hour = YuyueTime_Hour;
+  58   2          DisplayTime_Min = YuyueTime_Min;
+  59   2        }
+  60   1        
+  61   1        
+  62   1        
+  63   1        else
+  64   1        {
+  65   2          switch(Sys_State)  //不同状态显示不同的值
+  66   2          {
+  67   3            case State_OFF:
+  68   3            {
+  69   4              F_Close_Prog = 0;
+  70   4              F_Close_Clean = 0;
+  71   4              F_Close_TSB = 0;
+  72   4              F_Close_AMPM = 0;
+  73   4              F_Close_Sec = 0; 
+  74   4              F_Close_Time = 0;  
+  75   4              DisplayTime_Hour = CurrentTime_Hour; 
+  76   4              DisplayTime_Min = CurrentTime_Min;          
+  77   4            }break;
+  78   3            case State_ON_Step1:
+  79   3            {
+  80   4              F_Close_Prog = 0;
+  81   4              F_Close_Clean = 0;
+  82   4              F_Close_TSB = 0;
+  83   4              F_Close_AMPM = 0;
+  84   4              F_Close_Sec = 0; 
+  85   4              F_Close_Time = 0;  
+  86   4              DisplayTime_Hour = CurrentTime_Hour; 
+  87   4              DisplayTime_Min = CurrentTime_Min;   
+  88   4            }break;
+  89   3            case State_ON_Step2:
+  90   3            {
+  91   4              F_Close_Prog = 0;
+  92   4              F_Close_Clean = 0;
+  93   4              F_Close_TSB = 0;
+  94   4              F_Close_AMPM = 1;
+  95   4              F_Close_Sec = 0; 
+  96   4              F_Close_Time = 0;  
+  97   4              DisplayTime_Hour = HeatTime_Hour; 
+  98   4              DisplayTime_Min = HeatTime_Min;   
+  99   4            }break;
+ 100   3            case State_Clean:
+ 101   3            {
+ 102   4              DisplayTime_Hour = CurrentTime_Hour; 
+ 103   4              DisplayTime_Min = CurrentTime_Min;
+ 104   4              if(!F_CleanFlash)
+ 105   4              {
+ 106   5                F_Close_Prog = 0;
+ 107   5                F_Close_Clean = 0;
+ 108   5                F_Close_TSB = 0;
+ 109   5                F_Close_AMPM = 0;
+ 110   5                F_Close_Sec = 0; 
+ 111   5                F_Close_Time = 0;  
+ 112   5              }
+ 113   4              else
+ 114   4              {
+ 115   5                LED_Flash();
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 3   
+
+ 116   5              }         
+ 117   4            }break;
+ 118   3            default: break;
+ 119   3          }
+ 120   2        }  
+ 121   1        
+ 122   1        if(F_Update)
+ 123   1        {
+ 124   2          F_Update = 0;
+ 125   2          LED_Update(); //更新显示  
+ 126   2        }
+ 127   1      }
+ 128            
+ 129          
+ 130          void LED_Flash()
+ 131          {
+ 132   1        if(F_setTime && F_Set_flash)
+ 133   1        {
+ 134   2          if(flash)
+ 135   2          {
+ 136   3            F_Close_Prog = 0;
+ 137   3            F_Close_Clean = 0;
+ 138   3            F_Close_TSB = 0;
+ 139   3            F_Close_AMPM = 0;
+ 140   3            F_Close_Sec = 1; 
+ 141   3            F_Close_Time = 0;  
+ 142   3            F_Update = 1;   //开显示
+ 143   3          }
+ 144   2          else
+ 145   2          {       
+ 146   3            F_Close_Prog = 1;
+ 147   3            F_Close_Clean = 1;
+ 148   3            F_Close_TSB = 1;
+ 149   3            F_Close_AMPM = 1;
+ 150   3            F_Close_Sec = 1; 
+ 151   3            F_Close_Time = 1;  
+ 152   3            F_Update = 1;   //关显示
+ 153   3          }
+ 154   2        }
+ 155   1        else if(F_CleanFlash)
+ 156   1        {
+ 157   2          if(flash1s == 2)
+ 158   2          {
+ 159   3            flash1s = 0;
+ 160   3            LED_CLEAN = ~LED_CLEAN;
+ 161   3            F_Close_Clean = ~F_Close_Clean;
+ 162   3            F_Update = 1;
+ 163   3          }
+ 164   2        }
+ 165   1      }
+ 166          
+ 167          //=================================== LED初始化 =============================== 
+ 168          void Init_LED()    //LED初始化
+ 169          { 
+ 170   1        LED_SendData(0x02, 1);  //设置显示模式  6位8段
+ 171   1        LED_SendData(0x44, 1);  //固定地址模式
+ 172   1        
+ 173   1        LED_SendData(0xc0, 0);  //显示地址00H       1  
+ 174   1        LED_SendData(LED_Table[0x01], 1);  
+ 175   1        
+ 176   1        LED_SendData(0xc2, 0);  //显示地址02H       2
+ 177   1        LED_SendData(LED_Table[0x02], 1);
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 4   
+
+ 178   1        
+ 179   1        LED_SendData(0xc4, 0);  //显示地址04H       0
+ 180   1        LED_SendData(LED_Table[0x00], 1);
+ 181   1        
+ 182   1        LED_SendData(0xc6, 0);  //显示地址06H       0
+ 183   1        LED_SendData(LED_Table[0x00], 1);                     
+ 184   1        
+ 185   1        LED_SendData(0xc8, 0);  //显示地址08H       AM亮
+ 186   1        LED_SendData(AM_ON, 1);
+ 187   1        
+ 188   1        LED_SendData(0xcA, 0);  //显示地址0AH       “：”灭
+ 189   1        LED_SendData(Sec_OFF, 1);
+ 190   1      
+ 191   1        LED_SendData(0x8c, 1);  //脉冲宽度11/16，开显示
+ 192   1      }
+ 193          
+ 194          
+ 195          void LED_Update()
+ 196          {
+ 197   1        if(F_Close_Time == 0)
+ 198   1        {
+ 199   2          StorageData(DisplayTime_Hour, &Hour_shiwei, &Hour_gewei, 1);    
+ 200   2          LED_SetData(Adr_HourH, LED_Table[Hour_shiwei]);              //十位送显
+ 201   2          LED_SetData(Adr_HourL, LED_Table[Hour_gewei]);               //个位送显
+ 202   2      
+ 203   2          StorageData(DisplayTime_Min, &Min_shiwei, &Min_gewei, 0);
+ 204   2          LED_SetData(Adr_MinH, LED_Table[Min_shiwei]);
+ 205   2          LED_SetData(Adr_MinL, LED_Table[Min_gewei]);
+ 206   2        }
+ 207   1        else
+ 208   1        {
+ 209   2          LED_SetData(Adr_HourH, LED_Table[10]);              
+ 210   2          LED_SetData(Adr_HourL, LED_Table[10]);               
+ 211   2      
+ 212   2          LED_SetData(Adr_MinH, LED_Table[10]);
+ 213   2          LED_SetData(Adr_MinL, LED_Table[10]);
+ 214   2        }
+ 215   1      
+ 216   1        if(F_AM && !F_Close_AMPM)  //F_Close_AMPM = 1不显示AM、PM
+ 217   1        {
+ 218   2          LED_Data_S = AM_ON;
+ 219   2          LED_SetData(Adr_S, LED_Data_S);
+ 220   2        }
+ 221   1        else
+ 222   1        {
+ 223   2          LED_Data_S = AM_OFF;
+ 224   2          LED_SetData(Adr_S, LED_Data_S);
+ 225   2        }
+ 226   1      
+ 227   1        if(F_PM && !F_Close_AMPM)  //F_Close_AMPM = 1不显示AM、PM
+ 228   1        {
+ 229   2          LED_Data_S = PM_ON;
+ 230   2          LED_SetData(Adr_S, LED_Data_S);
+ 231   2        }
+ 232   1        else
+ 233   1        {
+ 234   2          LED_Data_S = PM_OFF;
+ 235   2          LED_SetData(Adr_S, LED_Data_S);
+ 236   2        }
+ 237   1      
+ 238   1        if(F_Clean && !F_Close_Clean)  //F_Close_Clean = 1，不显示CLEAN
+ 239   1        {
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 5   
+
+ 240   2          LED_Data_S = CLEAN_ON;
+ 241   2          LED_SetData(Adr_S, LED_Data_S);
+ 242   2        }
+ 243   1        else
+ 244   1        {
+ 245   2          LED_Data_S = CLEAN_OFF;
+ 246   2          LED_SetData(Adr_S, LED_Data_S);
+ 247   2        }
+ 248   1      
+ 249   1        if(F_Prog && !F_Close_Prog)  //F_Close_Prog = 1， 不显示PROG
+ 250   1        {
+ 251   2          LED_Data_S = PROG_ON;
+ 252   2          LED_SetData(Adr_S, LED_Data_S);
+ 253   2        }
+ 254   1        else
+ 255   1        {
+ 256   2          LED_Data_S = PROG_OFF;
+ 257   2          LED_SetData(Adr_S, LED_Data_S);
+ 258   2        }
+ 259   1      
+ 260   1        if(F_TSB && !F_Close_TSB)      //F_Close_TSB = 1，不显示TSB
+ 261   1        {
+ 262   2          LED_Data_T = TSB_ON;
+ 263   2          LED_SetData(Adr_T, LED_Data_T);
+ 264   2        }
+ 265   1        else
+ 266   1        {
+ 267   2          LED_Data_T = TSB_OFF;
+ 268   2          LED_SetData(Adr_T, LED_Data_T);
+ 269   2        }
+ 270   1      
+ 271   1        if((!F_Sec) && (!F_Close_Sec))  //F_Close_Sec = 1,":"正常显示；否则常亮
+ 272   1        {
+ 273   2          LED_Data_T = Sec_OFF;
+ 274   2          LED_SetData(Adr_T, LED_Data_T);
+ 275   2        }
+ 276   1        else
+ 277   1        {
+ 278   2          LED_Data_T = Sec_ON;
+ 279   2          LED_SetData(Adr_T, LED_Data_T);
+ 280   2        }
+ 281   1      }
+ 282          
+ 283          //===================================处理数据 =============================== 
+ 284          void StorageData(uchar num, uchar *Address_H, uchar *Address_L, bit num_type)  
+ 285          {
+ 286   1        if(num_type)   //num_type = 1代表num是小时
+ 287   1        {
+ 288   2          if(num > 12)  //小时数大于12
+ 289   2          {
+ 290   3            num = num - 12;
+ 291   3            if(F_AM)
+ 292   3            {       
+ 293   4              F_AM = 0;    //F_AM F_PM存储了AM PM的亮灭情况
+ 294   4              F_PM = 1;
+ 295   4            }
+ 296   3          }
+ 297   2          else //小时数小于12
+ 298   2          {
+ 299   3            if(F_PM)
+ 300   3            {
+ 301   4              F_PM = 0;
+C51 COMPILER V9.57.0.0   LCD                                                               05/19/2022 16:44:02 PAGE 6   
+
+ 302   4              F_AM = 1;
+ 303   4            }
+ 304   3          }
+ 305   2        }
+ 306   1        *Address_H = num / 10;
+ 307   1        *Address_L = num % 10;
+ 308   1      }
+ 309          
+ 310          
+ 311          //=================================== 更改某个LED点的状态 =============================== 
+ 312          void LED_SetData(uchar Address, uchar Data) //更改某个LED状态
+ 313          {
+ 314   1        LED_SendData(0x02, 1);  //设置显示模式  6位8段
+ 315   1        LED_SendData(0x44, 1);  //固定地址模式
+ 316   1        
+ 317   1        LED_SendData(Address, 0);  //Adress显示地址
+ 318   1        LED_SendData(Data, 1);     //Data数据
+ 319   1        
+ 320   1        LED_SendData(0x8c, 1);    //脉冲宽度11/16，开显示
+ 321   1      }
+ 322          
+ 323          
+ 324          
+ 325          //=================================== 发送一个8位的数据 =============================== 
+ 326          void LED_SendData(uchar Data, bit flag)    //给TM1602发送一个8位的数据
+ 327          {
+ 328   1        uint i = 0;
+ 329   1        CLK = 1;
+ 330   1        STB = 0;
+ 331   1      //  i = 700; while(i--);    //延时1ms
+ 332   1        for(i = 0; i < 8; i++)
+ 333   1        {
+ 334   2          CLK = 0;
+ 335   2          DIN = Data & 0x01;
+ 336   2          Data = Data >> 1;
+ 337   2          CLK = 1;
+ 338   2        }
+ 339   1        if(flag)
+ 340   1        {
+ 341   2          STB = 1;
+ 342   2        }
+ 343   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    704    ----
+   CONSTANT SIZE    =     11    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

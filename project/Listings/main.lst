@@ -1,0 +1,101 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              09/30/2022 08:23:23 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE C\main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\C;.\H) DEBUG OBJECTEXTEND P
+                    -RINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <SN8F5762.h>
+   2          #include "Init.h"
+   3          #include "AD.h"
+   4          #include "test.h"
+   5          #include "ctr.h"
+   6          #include "time.h"
+   7          #include "key.h"
+   8          #include "uart.h"
+   9          
+  10          #define MyDef   
+  11          #include "global.h"
+  12          
+  13          
+  14          void main(void)
+  15          {
+  16   1        WDTR = 0X5A;  //关看门狗
+  17   1        Init_IO();
+  18   1        Init_Time0();
+  19   1        Init_PWM();
+  20   1        Init_ADC();
+  21   1          
+  22   1        EAL = 1;
+  23   1        
+  24   1        while(1)
+  25   1        {
+  26   2          WDTR = 0X5A;  //关看门狗
+  27   2          if(Ft_2ms)
+  28   2          {
+  29   3            Ft_2ms = 0;
+  30   3            adcDEAL();
+  31   3            if(++cnt_10ms >= 5)
+  32   3            {
+  33   4              cnt_10ms = 0;
+  34   4              Scan_chadian();  //插电检测
+  35   4              keyscan();
+  36   4              keylongDEAL();
+  37   4            }
+  38   3            if(++cnt_125ms >= 63)
+  39   3            {
+  40   4              cnt_125ms = 0;
+  41   4              Ctrl_LED();
+  42   4            }
+  43   3            if(++cnt_100ms >= 50)
+  44   3            {
+  45   4              cnt_100ms = 0;
+  46   4              Scan_guoya();    //过压检测
+  47   4              Scan_Temp();     //温度检测
+  48   4              Scan_BATVol();   //电池电压检测 
+  49   4              Ctrl_Charge();   //充电控制
+  50   4              Motor1_Ctrl();   //振动电机控制
+  51   4            }
+  52   3            if(++cnt_500ms >= 250)
+  53   3            {
+  54   4              cnt_500ms = 0;
+C51 COMPILER V9.57.0.0   MAIN                                                              09/30/2022 08:23:23 PAGE 2   
+
+  55   4              Charge_timecounter(); //计时函数
+  56   4            }
+  57   3            if(++cnt_4s >= 2000) //串口发送数据--4S发送一次
+  58   3            {
+  59   4              cnt_4s = 0;
+  60   4              Uart_SendByte((Con_ChargeVolt>>8));
+  61   4              Uart_SendByte((Con_ChargeVolt & 0x00ff));
+  62   4              Uart_SendByte(Dec_num);
+  63   4            }
+  64   3          }
+  65   2        }
+  66   1      }
+  67          
+  68          void T0_Interrupt(void) interrupt ISRTimer0 
+  69          {
+  70   1        TH0 = 0xf8;    //延时2ms
+  71   1        TL0 = 0x30;
+  72   1        Ft_2ms = 1;
+  73   1      }
+  74          
+  75          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    157    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =     79    ----
+   BIT SIZE         =     18    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

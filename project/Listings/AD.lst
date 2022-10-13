@@ -1,0 +1,181 @@
+C51 COMPILER V9.57.0.0   AD                                                                09/30/2022 08:23:23 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE AD
+OBJECT MODULE PLACED IN .\Objects\AD.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE C\AD.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\C;.\H) DEBUG OBJECTEXTEND PRI
+                    -NT(.\Listings\AD.lst) TABS(2) OBJECT(.\Objects\AD.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          
+   3          
+   4          /*-----------------------------------------------------------
+   5          * 函数：void adcDEAL(void)
+   6          * 功能：AD转换函数
+   7          * 输入： 无
+   8          * 输出： 无
+   9          ------------------------------------------------------------*/
+  10          void adcDEAL(void) // Vector @  0x9B
+  11          {
+  12   1        if(fad_ing)   
+  13   1        { // check ADC status // Get ADC value
+  14   2          if(_EOC)
+  15   2          {
+  16   3              //将ADM中的数据取出赋予adDATA数组
+  17   3              ADM=ADM & 0xDF;
+  18   3              adDATA = ADB<<2;
+  19   3              adDATA = adDATA |((ADR&0x0c)>>2);
+  20   3              fad_ing=0; 
+  21   3              if(adN==0)
+  22   3              {
+  23   4                  adMAX=adDATA;
+  24   4                  adMIN=adDATA;
+  25   4                  adSUM=0;
+  26   4              }
+  27   3              else
+  28   3              {
+  29   4                  //比较得出6组AD数据中的最大最小值
+  30   4                  if(adDATA<adMIN)
+  31   4                  {adMIN=adDATA;}
+  32   4                  else if(adDATA>adMAX)
+  33   4                  {adMAX=adDATA;}
+  34   4              }
+  35   3              adSUM=adSUM+adDATA;
+  36   3              if(adN<5)
+  37   3              {adN++;} 
+  38   3              else
+  39   3              {
+  40   4                  adN=0;
+  41   4                  adSUM=adSUM-adMAX;
+  42   4                  adSUM=adSUM-adMIN;
+  43   4                  adVAL=adSUM>>2;
+  44   4                  switch(adcCH)
+  45   4                  {
+  46   5                    case 0:
+  47   5                    {//0通道AD数据处理
+  48   6                      adcCH = 1;
+  49   6                      AD_BATV = adVAL;   //电池电压
+  50   6                      if(AD_BATV >= 3)
+  51   6                      {
+  52   7                        AD_BATV -= 3;
+  53   7                      }
+  54   6                      VREFH = CLR_VREF | ADCRef2_5V;
+C51 COMPILER V9.57.0.0   AD                                                                09/30/2022 08:23:23 PAGE 2   
+
+  55   6                    }break;
+  56   5                    case 1:
+  57   5                    {//1通道AD数据处理
+  58   6                      adcCH=2;
+  59   6                      AD_USBV = adVAL;   //USB输入电压
+  60   6                      VREFH = CLR_VREF | ADCRef2_5V;
+  61   6                    }break;
+  62   5                    case 2:
+  63   5                    {//2通道AD数据处理
+  64   6                      adcCH=3;
+  65   6                      AD_ChargeC = adVAL;//USB充电电流
+  66   6                      if(AD_ChargeC >= 4)
+  67   6                      {
+  68   7                        AD_ChargeC -= 4;
+  69   7                      }
+  70   6                      VREFH = CLR_VREF | ADCRef2_5V;
+  71   6                    }break;
+  72   5                    case 3:
+  73   5                    {//3通道AD数据处理
+  74   6                      adcCH=4;
+  75   6                      AD_M1V = adVAL;    //振动马达工作电压
+  76   6                      VREFH = CLR_VREF | ADCRefVDD;
+  77   6                    }break;
+  78   5                    case 4:
+  79   5                    {//4通道AD数据处理
+  80   6                      adcCH=5;
+  81   6                      AD_NTCV = adVAL;  //NTC测温值
+  82   6                      VREFH = CLR_VREF | ADCRefVDD; 
+  83   6                    }break;
+  84   5                    case 5:
+  85   5                    {//5通道AD数据处理
+  86   6                      adcCH=6;
+  87   6                      AD_M2V = adVAL;    //转动马达工作电压
+  88   6                      VREFH = CLR_VREF | ADCRefVDD;  
+  89   6                    }break;
+  90   5                    case 6:
+  91   5                    {//6通道AD数据处理
+  92   6                      adcCH=7;
+  93   6                      AD_M2C = adVAL;    //转动马达工作电流
+  94   6                      VREFH = CLR_VREF | ADCRef2_5V; 
+  95   6                    }break;
+  96   5                    case 7:
+  97   5                    {//7通道AD数据处理
+  98   6                      adcCH=0;
+  99   6                      AD_M1C = adVAL;    //振动马达工作电流
+ 100   6                      VREFH = CLR_VREF | ADCRef2_5V;
+ 101   6                    }break;
+ 102   5                    default :
+ 103   5                    break;
+ 104   5                }
+ 105   4              }
+ 106   3            }     
+ 107   2        }
+ 108   1        if(fad_ing==0)
+ 109   1        {
+ 110   2            switch(adcCH) //切换AD通道
+ 111   2            {
+ 112   3              case 0:
+ 113   3              {
+ 114   4                  ADM = CLR_ADCCH |0x00;  // AIN0  ADC-3.7V
+ 115   4              }break;
+ 116   3              case 1:
+C51 COMPILER V9.57.0.0   AD                                                                09/30/2022 08:23:23 PAGE 3   
+
+ 117   3              {
+ 118   4                  ADM = CLR_ADCCH |0x02;  // AIN2  Detect-6V
+ 119   4              }break;
+ 120   3              case 2:
+ 121   3              {
+ 122   4                  ADM = CLR_ADCCH |0x03;  // AIN3  ADC-CHARGEC
+ 123   4              }break;
+ 124   3              case 3:
+ 125   3              {
+ 126   4                  ADM = CLR_ADCCH |0x04;  // AIN4  ADC-M1
+ 127   4              }break;
+ 128   3              case 4:
+ 129   3              {
+ 130   4                  ADM = CLR_ADCCH |0x06;  // AIN6  NTC
+ 131   4              }break;
+ 132   3              case 5:
+ 133   3              {
+ 134   4                  ADM = CLR_ADCCH |0x07;  // AIN7  ADC-M2
+ 135   4              }break;
+ 136   3              case 6:
+ 137   3              {
+ 138   4                  ADM = CLR_ADCCH |0x08;  // AIN8  ADC-MTCTR2
+ 139   4              }break;
+ 140   3              case 7:
+ 141   3              {
+ 142   4                  ADM = CLR_ADCCH |0x0b;  // AIN11 ADC-MTCTR
+ 143   4              }break;
+ 144   3              default:
+ 145   3              { 
+ 146   4                  ADM= CLR_ADCCH |0x00;  
+ 147   4                  adcCH=0;
+ 148   4              }break;
+ 149   3            }
+ 150   2            ADC_START;
+ 151   2            fad_ing=1;
+ 152   2        }
+ 153   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    576    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

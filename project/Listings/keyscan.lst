@@ -1,0 +1,462 @@
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE KEYSCAN
+OBJECT MODULE PLACED IN .\Objects\keyscan.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE keyscan.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings
+                    -\keyscan.lst) TABS(2) OBJECT(.\Objects\keyscan.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          #include "lcd.h"
+   3          
+   4          
+   5          void Key_Check(void)
+   6          {
+   7   1        uchar KeyTemp = 0, KeyNew = 0;
+   8   1        if(Key_HOUR == 0)
+   9   1        {KeyNew = KeyNew | 0x01;}
+  10   1        
+  11   1        if(Key_MIN == 0)
+  12   1        {KeyNew = KeyNew | 0x02;}
+  13   1        
+  14   1        if(Key_BREF_OFF == 0)
+  15   1        {KeyNew = KeyNew | 0x04;}
+  16   1      
+  17   1        if(Key_PROG == 0)
+  18   1        {KeyNew = KeyNew | 0x08;}
+  19   1      
+  20   1        if(Key_CLEAN == 0)
+  21   1        {KeyNew = KeyNew | 0x10;}
+  22   1        
+  23   1        KeyTemp = KeyNew ^ KeyBUF;  
+  24   1        if(KeyNew != KeyBUF)  //按键前后状态改变  
+  25   1        {
+  26   2          Key_Deb++;
+  27   2          if(Key_Deb >= 4)
+  28   2          {
+  29   3            Key_Deb = 0;
+  30   3            KeyBUF = KeyNew;  //消抖完成后才能更新键值
+  31   3            
+  32   3      //=================================== BREW/OFF键按下 =============================== 
+  33   3            if(KeyTemp & 0x04)
+  34   3            {
+  35   4              if(Key_BREF_OFF == 0)   
+  36   4              {
+  37   5                F_key5down = 1;       
+  38   5              }
+  39   4              else
+  40   4              {
+  41   5                 F_key5down = 0;
+  42   5                 if(cnt_Key5LongDown)
+  43   5                 {
+  44   6                   cnt_Key5LongDown = 0;
+  45   6                 }
+  46   5                 else
+  47   5                 {             
+  48   6                   if(F_setTime)
+  49   6                   {
+  50   7                     F_KeyOutSet = 1;
+  51   7                   }
+  52   6                   if(Sys_State == State_ON_Step1)             
+  53   6                   {
+  54   7                     F_FinishWork = 1;
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 2   
+
+  55   7                     F_StopWay = 1;
+  56   7                   }
+  57   6                   if(Sys_State == State_OFF)
+  58   6                   {
+  59   7                     F_StartWork = 1;
+  60   7                     F_OFF_OUT = 1;
+  61   7                   }
+  62   6                   if(Sys_State == State_ON_Step2)
+  63   6                   {
+  64   7                     F_Finishbaowen = 1;
+  65   7                     F_StopWay1 = 1;
+  66   7                   }                        
+  67   6                 }           
+  68   5              }
+  69   4            }
+  70   3      //=================================== PROG键按下 =============================== 
+  71   3            if(KeyTemp & 0x08)
+  72   3            {
+  73   4              if(Key_PROG == 0)    
+  74   4              { 
+  75   5                F_key3down = 1;
+  76   5                if((Sys_State == State_OFF) && (!F_setTime))
+  77   5                {
+  78   6                  F_ShowPROG = 1;
+  79   6                  F_Update = 1;
+  80   6                }           
+  81   5              }
+  82   4              else
+  83   4              {
+  84   5                 F_key3down = 0;
+  85   5                 F_ShowPROG = 0;
+  86   5                 if((Sys_State == State_OFF) && (!F_setTime))
+  87   5                 { 
+  88   6                   F_Update = 1;
+  89   6                 }
+  90   5                 if(cnt_Key3LongDown)
+  91   5                 {
+  92   6                   cnt_Key3LongDown = 0;
+  93   6                 }
+  94   5                 else
+  95   5                 {
+  96   6                   if(F_setTime)
+  97   6                   {
+  98   7                     F_KeyOutSet = 1;
+  99   7                   }
+ 100   6                   if(Sys_State == State_OFF)
+ 101   6                   {
+ 102   7                     F_one = 1;
+ 103   7                     if(F_yuyue == 1)
+ 104   7                     {
+ 105   8                       F_yuyue = 0;
+ 106   8                     }
+ 107   7                     else
+ 108   7                     {
+ 109   8                       F_yuyue = 1;
+ 110   8                     }
+ 111   7                   }             
+ 112   6                 }
+ 113   5              }
+ 114   4            }
+ 115   3      //=================================== CLEAN键按下 =============================== 
+ 116   3            if(KeyTemp & 0x10)
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 3   
+
+ 117   3            {
+ 118   4              if(Key_CLEAN == 0)    
+ 119   4              { 
+ 120   5                F_key4down = 1;         
+ 121   5              }
+ 122   4              else
+ 123   4              {
+ 124   5                 F_key4down = 0;
+ 125   5                 if(cnt_Key4LongDown)
+ 126   5                 {
+ 127   6                   cnt_Key4LongDown = 0;         
+ 128   6                 }
+ 129   5                 else
+ 130   5                 {
+ 131   6                   if(F_setTime)
+ 132   6                   {
+ 133   7                     F_KeyOutSet = 1;
+ 134   7                   }
+ 135   6                   if(Sys_State == State_OFF || Sys_State == State_Clean)
+ 136   6                   {
+ 137   7                     F_FinishClean = 1;
+ 138   7                     F_FinishWay = 1;
+ 139   7                   }
+ 140   6                 }
+ 141   5              }
+ 142   4            }
+ 143   3            
+ 144   3      //=================================== Hour键按下 =============================== 
+ 145   3            if(KeyTemp & 0x01)
+ 146   3            {
+ 147   4              if(Key_HOUR == 0)   
+ 148   4              {
+ 149   5                 F_key1down = 1;  
+ 150   5                 F_set = 0; 
+ 151   5              }
+ 152   4               else               
+ 153   4               {
+ 154   5                 //----按键1按下后要执行的操作----//
+ 155   5                 if(cnt_Key1LongDown)  //按键长按后松开
+ 156   5                 {
+ 157   6                    F_key1down = 0;
+ 158   6                    cnt_Key1LongDown = 0;
+ 159   6                    F_set = 1; //退出设置
+ 160   6                 }
+ 161   5                 else
+ 162   5                 {            
+ 163   6                    F_key1down = 0;
+ 164   6                    if(F_setTime)   //F_setTime为1才能设置时间
+ 165   6                    {
+ 166   7                      F_set = 1; //退出设置标志位
+ 167   7                      DisplayTime_Hour++;       //设置当前时间
+ 168   7                      if(F_SetOFF)
+ 169   7                      {
+ 170   8                        if(DisplayTime_Hour > 4)
+ 171   8                        {
+ 172   9                          DisplayTime_Hour = 0;
+ 173   9                        }
+ 174   8                        if(DisplayTime_Hour == 4)
+ 175   8                        {
+ 176   9                          DisplayTime_Min = 0;
+ 177   9                          F_Update = 1;
+ 178   9                        }
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 4   
+
+ 179   8                      }
+ 180   7                      else
+ 181   7                      {
+ 182   8                        if(DisplayTime_Hour > 24)
+ 183   8                        {
+ 184   9                          DisplayTime_Hour = 1;
+ 185   9                        }
+ 186   8                      }
+ 187   7                      F_Update = 1;  
+ 188   7                    }
+ 189   6                }
+ 190   5              }
+ 191   4            }
+ 192   3              
+ 193   3      //================================ Min键按下 ==================================
+ 194   3            if(KeyTemp & 0x02)
+ 195   3            {
+ 196   4              if(Key_MIN == 0)   
+ 197   4              {
+ 198   5                F_key2down = 1; 
+ 199   5                F_set = 0; 
+ 200   5              }
+ 201   4              else               
+ 202   4              {
+ 203   5                if(cnt_Key2LongDown)  //按键长按后松开
+ 204   5                {
+ 205   6                  F_key2down = 0;
+ 206   6                  cnt_Key2LongDown = 0;
+ 207   6                  F_set = 1; 
+ 208   6                } 
+ 209   5                else                  //按键短按后松开
+ 210   5                {
+ 211   6                  F_key2down = 0;
+ 212   6                  if(F_setTime)  
+ 213   6                  {
+ 214   7                    F_set = 1;
+ 215   7                    DisplayTime_Min++;
+ 216   7                    if(DisplayTime_Min > 59)  
+ 217   7                    {
+ 218   8                      DisplayTime_Min = 0;
+ 219   8                    }
+ 220   7                    if(DisplayTime_Hour == 4 && F_SetOFF)
+ 221   7                    {
+ 222   8                      DisplayTime_Min = 0;
+ 223   8                    }               
+ 224   7                    F_Update = 1;    
+ 225   7                  }
+ 226   6                }
+ 227   5              }
+ 228   4            }
+ 229   3          }
+ 230   2        }
+ 231   1        else  //消抖失败
+ 232   1        {
+ 233   2          if(Key_Deb > 2)
+ 234   2          {Key_Deb -= 2;}
+ 235   2          else
+ 236   2          {Key_Deb = 0;}
+ 237   2        }
+ 238   1      }
+ 239          
+ 240          
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 5   
+
+ 241          
+ 242          
+ 243          void Key_LongDealy(void)   //长按检测
+ 244          {
+ 245   1      //================================ Hour键长按检测 ==================================
+ 246   1        if(F_key1down)  
+ 247   1        {
+ 248   2          if(cnt_Key1LongDown == 0)
+ 249   2          {
+ 250   3            cntKey1LongDeal++;
+ 251   3            if(cntKey1LongDeal >= 300 && F_setTime == 0)   
+ 252   3            {
+ 253   4              cntKey1LongDeal = 0;
+ 254   4              cnt_Key1LongDown = 1;  
+ 255   4       //------------Hour按键长按3s后只执行一次的操作----------------//
+ 256   4              F_SetTimeIN = 1;
+ 257   4              F_Key1Re = 1;
+ 258   4            }
+ 259   3            if(cntKey1LongDeal >= 100 && F_setTime == 1)   
+ 260   3            {
+ 261   4              F_Key1Re = 0;
+ 262   4              cntKey1LongDeal = 0;
+ 263   4              cnt_Key1LongDown = 1;  
+ 264   4              cnt_Key1Long = 0;
+ 265   4            }
+ 266   3          }
+ 267   2          else
+ 268   2          {
+ 269   3            cntKey1LongDeal = 0;
+ 270   3            if(F_setTime == 1 && F_Key1Re == 0)
+ 271   3            {
+ 272   4              cnt_Key1Long++;
+ 273   4              if(cnt_Key1Long >= 25)  //250毫秒加一次，一秒加4次
+ 274   4              {
+ 275   5                cnt_Key1Long = 0;
+ 276   5              //------------Hour按键长按后要执行多次的操作1----------------//            
+ 277   5                F_Update = 1;
+ 278   5                DisplayTime_Hour++;
+ 279   5                if(F_SetOFF)
+ 280   5                {
+ 281   6                  if(DisplayTime_Hour > 4)
+ 282   6                  {
+ 283   7                    DisplayTime_Hour = 0;
+ 284   7                  }
+ 285   6                  if(DisplayTime_Hour == 4)
+ 286   6                  {
+ 287   7                    DisplayTime_Min = 0;
+ 288   7                    F_Update = 1;
+ 289   7                  }
+ 290   6                }
+ 291   5                else
+ 292   5                {
+ 293   6                  if(DisplayTime_Hour > 24)
+ 294   6                  {
+ 295   7                    DisplayTime_Hour = 1;
+ 296   7                  }
+ 297   6                }
+ 298   5              }
+ 299   4            }
+ 300   3          }
+ 301   2        }
+ 302   1        else
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 6   
+
+ 303   1        {
+ 304   2          cntKey1LongDeal = 0;  
+ 305   2        }
+ 306   1        
+ 307   1      //================================ Min键长按检测 ==================================
+ 308   1        if(F_key2down)  
+ 309   1        {
+ 310   2          if(cnt_Key2LongDown == 0)
+ 311   2          {
+ 312   3            cntKey2LongDeal++;
+ 313   3            if(cntKey2LongDeal >= 300 && F_setTime == 0)   
+ 314   3            {
+ 315   4              cntKey2LongDeal = 0;
+ 316   4              cnt_Key2LongDown = 1;  //长按标志位
+ 317   4       //------------Hour按键长按3s后要执行的操作----------------//
+ 318   4              F_SetTimeIN = 1;
+ 319   4              F_Key2Re = 1;
+ 320   4            }
+ 321   3            if(cntKey2LongDeal >= 100 && F_setTime == 1)   
+ 322   3            {
+ 323   4              F_Key2Re = 0;
+ 324   4              cntKey2LongDeal = 0;
+ 325   4              cnt_Key2LongDown = 1;  //长按标志位
+ 326   4              cnt_Key2Long = 0;
+ 327   4            }
+ 328   3          }
+ 329   2          else
+ 330   2          {
+ 331   3            cntKey2LongDeal = 0;
+ 332   3            if(F_setTime == 1 && F_Key2Re == 0)
+ 333   3            {
+ 334   4              cnt_Key2Long++;
+ 335   4              if(cnt_Key2Long >= 25)  //250毫秒加一次，一秒加4次
+ 336   4              {
+ 337   5                cnt_Key2Long = 0;
+ 338   5                F_Update = 1;
+ 339   5                DisplayTime_Min++;    
+ 340   5                if(DisplayTime_Min > 59)
+ 341   5                {
+ 342   6                  DisplayTime_Min = 0;
+ 343   6                }
+ 344   5                if(DisplayTime_Hour == 4 && F_SetOFF)
+ 345   5                {
+ 346   6                  DisplayTime_Min = 0;
+ 347   6                }               
+ 348   5              }
+ 349   4            }
+ 350   3          }
+ 351   2        }
+ 352   1        else
+ 353   1        {
+ 354   2          cntKey2LongDeal = 0;  
+ 355   2        }
+ 356   1      
+ 357   1      //================================ Prog键长按检测 ==================================
+ 358   1        if(F_key3down)  
+ 359   1        {
+ 360   2          if(cnt_Key3LongDown == 0)
+ 361   2          {
+ 362   3            cntKey3LongDeal++;
+ 363   3            if(cntKey3LongDeal >= 200)   
+ 364   3            {
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 7   
+
+ 365   4              cntKey3LongDeal = 0;
+ 366   4              cnt_Key3LongDown = 1;  //长按标志位
+ 367   4       //------------Prog按键长按3s后要执行的操作----------------//
+ 368   4              F_SetTimeIN = 1;
+ 369   4              F_SetProg = 1;
+ 370   4            }
+ 371   3          }
+ 372   2        }
+ 373   1        else
+ 374   1        {
+ 375   2          cntKey3LongDeal = 0;  
+ 376   2        }
+ 377   1      
+ 378   1      //================================ CLEAN键长按检测 ==================================
+ 379   1        if(F_key4down)  
+ 380   1        {
+ 381   2          if(cnt_Key4LongDown == 0)
+ 382   2          {
+ 383   3            cntKey4LongDeal++;
+ 384   3            if(cntKey4LongDeal >= 200)   
+ 385   3            {
+ 386   4              cntKey4LongDeal = 0;
+ 387   4              cnt_Key4LongDown = 1;  //长按标志位
+ 388   4       //------------CLEAN按键长按2s后要执行的操作----------------//
+ 389   4              if(Sys_State == State_OFF)
+ 390   4              {
+ 391   5                F_KeyClean = 1;
+ 392   5              }
+ 393   4            }
+ 394   3          }
+ 395   2        }
+ 396   1        else
+ 397   1        {
+ 398   2          cntKey4LongDeal = 0;  
+ 399   2        }
+ 400   1        
+ 401   1        
+ 402   1        
+ 403   1      //================================ BREF键长按检测 ==================================
+ 404   1        if(F_key5down)  
+ 405   1        {
+ 406   2          if(cnt_Key5LongDown == 0)
+ 407   2          {
+ 408   3            cntKey5LongDeal++;
+ 409   3            if(cntKey5LongDeal >= 200)   
+ 410   3            {
+ 411   4              cntKey5LongDeal = 0;
+ 412   4              cnt_Key5LongDown = 1;  //长按标志位
+ 413   4       //------------BREF按键长按2s后要执行的操作----------------//
+ 414   4              F_SetTimeIN = 1;
+ 415   4              F_SetOFF = 1;
+ 416   4            }
+ 417   3          }
+ 418   2        }
+ 419   1        else
+ 420   1        {
+ 421   2          cntKey5LongDeal = 0;  
+ 422   2        }
+ 423   1      }
+ 424          
+
+
+C51 COMPILER V9.57.0.0   KEYSCAN                                                           05/19/2022 16:44:02 PAGE 8   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    788    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

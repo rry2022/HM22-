@@ -1,0 +1,405 @@
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE FUNCTION
+OBJECT MODULE PLACED IN .\Objects\function.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE function.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\function.lst) TABS(2) OBJECT(.\Objects\function.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          #include "lcd.h"
+   3          
+   4          void Program_Check(); //预约检测
+   5          void Clean_Check();   //清洁次数检测
+   6          
+   7          void SetTime_Function()
+   8          {
+   9   1        if(F_SetTimeIN)                      //进入设置时间模式的入口
+  10   1        {
+  11   2          F_SetTimeIN = 0;
+  12   2          F_setTime = 1;
+  13   2          F_set = 1;
+  14   2          F_KeyRest = 1;
+  15   2          F_Sec = 1;
+  16   2          F_Update = 1;
+  17   2          if(F_SetProg)  //设置开机时间
+  18   2          {
+  19   3            F_ProgFlash = 1;
+  20   3            DisplayTime_Hour = YuyueTime_Hour;
+  21   3            DisplayTime_Min = YuyueTime_Min;
+  22   3          }
+  23   2          else if(F_SetOFF) //设置保温时间
+  24   2          {
+  25   3            F_BREFFlash = 1;
+  26   3            DisplayTime_Hour = BaowenTime_Hour;
+  27   3            DisplayTime_Min = BaowenTime_Min;
+  28   3          }
+  29   2          else  //设置实时时间
+  30   2          {
+  31   3            DisplayTime_Hour = CurrentTime_Hour; 
+  32   3            DisplayTime_Min = CurrentTime_Min;       
+  33   3          }     
+  34   2        }
+  35   1        
+  36   1        
+  37   1        if(F_setTime)                            //设置中
+  38   1        {
+  39   2          if(F_set == 0)//有按键按下
+  40   2          {
+  41   3            F_Set_flash = 0;
+  42   3            F_SetRest = 0;
+  43   3          }
+  44   2          
+  45   2          if(F_KeyRest)  //2s无操作进入
+  46   2          {
+  47   3            F_KeyRest = 0;
+  48   3            F_Set_flash = 1;
+  49   3            flash = 0;        
+  50   3          }
+  51   2          
+  52   2          if(F_KeyOutSet)  //F_KeyOutSet在按键检测函数里修改
+  53   2          {
+  54   3            F_KeyOutSet = 0;
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 2   
+
+  55   3            F_SetTimeOUT = 1;
+  56   3          }
+  57   2        }
+  58   1      
+  59   1      
+  60   1        if(F_SetTimeOUT)                            //退出时间设置
+  61   1        {
+  62   2          F_SetTimeOUT = 0;
+  63   2          F_Set_flash = 0;
+  64   2          F_setTime = 0;
+  65   2          F_Update = 1;     
+  66   2          if(F_SetProg)
+  67   2          {
+  68   3            YuyueTime_Hour = DisplayTime_Hour;
+  69   3            YuyueTime_Min = DisplayTime_Min;      
+  70   3            F_ProgFlash = 0;
+  71   3            LED_PROG = ~F_yuyue;
+  72   3            F_SetProg = 0;  
+  73   3          }
+  74   2          else if(F_SetOFF)
+  75   2          {
+  76   3            BaowenTime_Hour = DisplayTime_Hour;
+  77   3            BaowenTime_Min = DisplayTime_Min;
+  78   3            F_SetOFF = 0;
+  79   3            F_BREFFlash = 0;
+  80   3            LED_BREF_OFF = ~F_Work;
+  81   3          }
+  82   2          else
+  83   2          {       
+  84   3            CurrentTime_Hour = DisplayTime_Hour;
+  85   3            CurrentTime_Min = DisplayTime_Min;
+  86   3            CurrentTime_Sec = 0;
+  87   3          }
+  88   2        }
+  89   1      }
+  90          
+  91          
+  92          
+  93          void Work_Function(void)
+  94          {     
+  95   1        switch(Sys_State)  
+  96   1        {
+  97   2          case State_Init:  //---------------------------------------------刚上电
+  98   2          {
+  99   3            F_SetTimeIN = 1;
+ 100   3            Sys_State = State_OFF;        
+ 101   3          }break;
+ 102   2          case State_OFF:  //------------------------------------------------待机
+ 103   2          {
+ 104   3            if(F_OFF_IN)                           //进入待机模式入口
+ 105   3            {
+ 106   4              F_OFF_IN = 0;   
+ 107   4            } 
+ 108   3            
+ 109   3            Program_Check(); //预约检测
+ 110   3            Clean_Check();   //工作次数检测 
+ 111   3                  
+ 112   3            if(F_OFF_OUT)                          //退出待机模式的出口
+ 113   3            {
+ 114   4              F_OFF_OUT = 0;
+ 115   4              if(F_StartWork)
+ 116   4              {
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 3   
+
+ 117   5                Sys_State = State_ON_Step1;
+ 118   5              }
+ 119   4              if(F_StartClean)
+ 120   4              {
+ 121   5                Sys_State = State_Clean;
+ 122   5              }
+ 123   4            }
+ 124   3          }break;
+ 125   2          case State_ON_Step1:     //------------------------------------酿造阶段
+ 126   2          {
+ 127   3            if(F_StartWork)                          //开始酿造
+ 128   3            {
+ 129   4              F_StartWork = 0;
+ 130   4              F_Work = 1;
+ 131   4              F_OpenRY = 1;
+ 132   4              LED_BREF_OFF = ~F_Work;
+ 133   4              Work_Time = 0;        
+ 134   4            }
+ 135   3            
+ 136   3            
+ 137   3            if(F_Work)                                //酿造中
+ 138   3            {
+ 139   4              if(F_DelayClose == 0)
+ 140   4              {
+ 141   5                if(adVAL > 203)
+ 142   5                {
+ 143   6                  F_DelayClose = 1;
+ 144   6                  F_RYState = 0;
+ 145   6                }
+ 146   5                else
+ 147   5                {
+ 148   6                  F_RYState = 1;
+ 149   6                }
+ 150   5              }
+ 151   4              else if(Delay_1min == 120)
+ 152   4              {
+ 153   5                if(adVAL > 164)
+ 154   5                {
+ 155   6                  F_FinishWork = 1;
+ 156   6                  F_StopWay = 0;
+ 157   6                }
+ 158   5                F_DelayClose = 0;
+ 159   5              }
+ 160   4            }
+ 161   3            
+ 162   3            //F_FinishWork在还可以通过按键更改
+ 163   3            if(F_FinishWork)                          //酿造结束
+ 164   3            {
+ 165   4              F_FinishWork = 0;
+ 166   4              F_Work = 0;
+ 167   4              LED_BREF_OFF = ~F_Work;
+ 168   4              F_OpenRY = 0;
+ 169   4              F_RYState = 0;
+ 170   4              if(F_Workn)//记工作次数
+ 171   4              {
+ 172   5                Work_n++;
+ 173   5                F_Workn = 0;
+ 174   5              }
+ 175   4              if(F_StopWay)//结束方式
+ 176   4              {
+ 177   5                F_StopWay = 0;
+ 178   5                Sys_State = State_OFF;
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 4   
+
+ 179   5                F_OFF_IN = 1;
+ 180   5              }
+ 181   4              else
+ 182   4              {
+ 183   5                Sys_State = State_ON_Step2;
+ 184   5                F_Startbaowen = 1;
+ 185   5                F_BUZ5s = 1;
+ 186   5              }
+ 187   4            }       
+ 188   3          }break;
+ 189   2          case State_ON_Step2:   //---------------------------------------------保温模式
+ 190   2          {
+ 191   3             if(F_Startbaowen)               //开始保温
+ 192   3             {
+ 193   4               F_Startbaowen = 0;
+ 194   4               F_OpenRY = 1;
+ 195   4               F_baowen = 1;
+ 196   4               HeatTime_Hour = 0;
+ 197   4               HeatTime_Min = 0;
+ 198   4               HeatTime_sec = 0;
+ 199   4               F_TSB = F_baowen;
+ 200   4               F_Reset = 1;
+ 201   4             }
+ 202   3             
+ 203   3             
+ 204   3             if(F_baowen)                    //保温中
+ 205   3             {
+ 206   4               if((BaowenTime_Hour == HeatTime_Hour) && (BaowenTime_Min == HeatTime_Min))
+ 207   4               {
+ 208   5                  F_Finishbaowen = 1;
+ 209   5                  F_StopWay1 = 0;
+ 210   5               }
+ 211   4               else
+ 212   4               {
+ 213   5                  if(adVAL > 160)
+ 214   5                  {
+ 215   6                    F_RYState = 0;
+ 216   6                  }
+ 217   5                  else
+ 218   5                  {
+ 219   6                    F_RYState = 1;
+ 220   6                  }
+ 221   5               }
+ 222   4             }
+ 223   3             
+ 224   3             
+ 225   3             if(F_Finishbaowen)               //保温结束
+ 226   3             {
+ 227   4               F_Finishbaowen = 0;
+ 228   4               F_baowen = 0;
+ 229   4               F_RYState = 0;
+ 230   4               F_OpenRY = 0;
+ 231   4               Sys_State = State_OFF;
+ 232   4               F_OFF_IN = 1;
+ 233   4               F_TSB = F_baowen;
+ 234   4               if(!F_StopWay1)
+ 235   4               {
+ 236   5                 F_BUZ2s = 1;
+ 237   5               }
+ 238   4             }
+ 239   3          }break;
+ 240   2          case State_Clean:   //-------------------------------------------------清洁模式
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 5   
+
+ 241   2          {
+ 242   3             if(F_StartClean)              //开始清洁
+ 243   3             {
+ 244   4               F_StartClean = 0;
+ 245   4               F_CleanFlash = 1;
+ 246   4               CleanTime = 0;
+ 247   4               F_OpenRY = 1;
+ 248   4               F_Cleaning = 1;
+ 249   4               F_Clean = 1;
+ 250   4               LED_CLEAN = 0;
+ 251   4               F_Update = 1;
+ 252   4             }
+ 253   3             
+ 254   3             
+ 255   3             if(F_Cleaning)                //清洁中
+ 256   3             {
+ 257   4               if(adVAL > 203)
+ 258   4               {
+ 259   5                 F_FinishClean = 1;
+ 260   5                 F_FinishWay = 0;
+ 261   5               }
+ 262   4               else
+ 263   4               {
+ 264   5                 if(F_60s)
+ 265   5                 {
+ 266   6                   F_RYState = 1;
+ 267   6                 }
+ 268   5                 else
+ 269   5                 {
+ 270   6                   F_RYState = 0;
+ 271   6                 }
+ 272   5               }
+ 273   4             }
+ 274   3                     
+ 275   3             if(F_FinishClean)               //清洁完毕
+ 276   3             {
+ 277   4               F_FinishClean = 0;
+ 278   4               F_Cleaning = 0;
+ 279   4               F_CleanFlash = 0;
+ 280   4               F_OpenRY = 0;
+ 281   4               F_RYState = 0;
+ 282   4               Sys_State = State_OFF;
+ 283   4               F_OFF_IN = 1;
+ 284   4               F_Clean = 0;
+ 285   4               LED_CLEAN = ~F_Cleaning;
+ 286   4               F_Close_Clean = 0;
+ 287   4               if(F_FinishWay == 0)
+ 288   4               {
+ 289   5                 Work_n = 0;
+ 290   5                 F_BUZ5s = 1;
+ 291   5               }
+ 292   4               else
+ 293   4               {
+ 294   5                 Work_n = 149;
+ 295   5               }
+ 296   4             }
+ 297   3          }break;
+ 298   2          default: break;
+ 299   2        }
+ 300   1      }
+ 301          
+ 302          
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 6   
+
+ 303          void Program_Check()
+ 304          {
+ 305   1        if(F_yuyue)  //预约开机
+ 306   1        {
+ 307   2          if((YuyueTime_Hour == CurrentTime_Hour) && (YuyueTime_Min == CurrentTime_Min))
+ 308   2          {
+ 309   3            F_yuyue = 0;
+ 310   3            F_StartWork = 1;
+ 311   3            F_OFF_OUT = 1;
+ 312   3            LED_PROG = ~F_yuyue;
+ 313   3            F_Prog = 0;
+ 314   3            F_Update = 1;                       
+ 315   3          }
+ 316   2          else if(!F_Prog)
+ 317   2          {
+ 318   3            LED_PROG = ~F_yuyue;
+ 319   3            F_Update = 1;
+ 320   3            F_Prog = 1;
+ 321   3          }
+ 322   2        }
+ 323   1        else
+ 324   1        {
+ 325   2          if(F_Prog)
+ 326   2          {           
+ 327   3            LED_PROG = ~F_yuyue;
+ 328   3            F_Update = 1;
+ 329   3            F_Prog = 0;
+ 330   3          }           
+ 331   2        }
+ 332   1      }
+ 333          
+ 334          void Clean_Check()
+ 335          {
+ 336   1        if(Work_n >= 150)  //统计酿造次数
+ 337   1        {
+ 338   2          F_Dirty = 1;
+ 339   2          if(!F_Clean)
+ 340   2          {
+ 341   3            F_Update = 1;
+ 342   3            F_Clean = 1;
+ 343   3            LED_CLEAN = ~F_Dirty;
+ 344   3          }
+ 345   2        }
+ 346   1        else
+ 347   1        {
+ 348   2          F_Dirty = 0;
+ 349   2          if(F_Clean)
+ 350   2          {
+ 351   3            F_Update = 1;
+ 352   3            F_Clean = F_Dirty;
+ 353   3            LED_CLEAN = ~F_Dirty;
+ 354   3          }
+ 355   2        }
+ 356   1        
+ 357   1        if(F_FinishClean && (F_Dirty = 1))
+ 358   1        {
+ 359   2          F_FinishClean = 0;
+ 360   2          Work_n = 149;
+ 361   2        }
+ 362   1        
+ 363   1        if(F_KeyClean)
+ 364   1        {
+C51 COMPILER V9.57.0.0   FUNCTION                                                          05/19/2022 16:44:03 PAGE 7   
+
+ 365   2          F_StartClean = 1;
+ 366   2          F_OFF_OUT = 1;
+ 367   2          F_KeyClean = 0;
+ 368   2        }
+ 369   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    578    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

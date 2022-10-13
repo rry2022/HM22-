@@ -1,0 +1,12 @@
+".\Objects\STARTUP.obj",
+".\Objects\OPTIONS_SN8F5762.obj",
+".\Objects\AD.obj",
+".\Objects\ctr.obj",
+".\Objects\init.obj",
+".\Objects\main.obj",
+".\Objects\test.obj",
+".\Objects\time.obj",
+".\Objects\key.obj",
+".\Objects\uart.obj" 
+TO ".\Objects\test" 
+PRINT(".\Listings\test.m51") RAMSIZE(256) 

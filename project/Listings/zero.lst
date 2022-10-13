@@ -1,0 +1,155 @@
+C51 COMPILER V9.57.0.0   ZERO                                                              05/19/2022 16:44:03 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE ZERO
+OBJECT MODULE PLACED IN .\Objects\zero.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE zero.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\ze
+                    -ro.lst) TABS(2) OBJECT(.\Objects\zero.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          
+   3          //=====================================================================================
+   4          //可控硅过零处理程序,125US/200US调用一次
+   5          //=====================================================================================
+   6          void accCHK(void)
+   7          {
+   8   1        cntACC++;
+   9   1        faccNEW = 0;
+  10   1        if(AC_C)
+  11   1        {faccNEW = 1;}
+  12   1        if(faccNEW != faccBUF)
+  13   1        {
+  14   2            accDEB++;
+  15   2            if(accDEB>=2)
+  16   2            {//过零消抖2次
+  17   3              accDEB=0;
+  18   3              faccBUF = faccNEW;
+  19   3              if(faccNEW)  //上升沿才会进入
+  20   3              {
+  21   4                if((cntACC>=62)&&(cntACC<166))  //200us(30-80Hz)
+  22   4                {
+  23   5                  if(cntACC >= 91)  //（T60HZ+T50HZ）/ 2 = 91
+  24   5                  {
+  25   6                    T_50HZ++;
+  26   6                    if(T_50HZ == 50)
+  27   6                    {
+  28   7                      T_50HZ = 0;
+  29   7                      F_Zero1s = 1;
+  30   7                    }
+  31   6                  }
+  32   5                  else
+  33   5                  {  
+  34   6                    T_60HZ++;
+  35   6                    if(T_60HZ == 60)
+  36   6                    {
+  37   7                      T_60HZ = 0;
+  38   7                      F_Zero1s = 1;
+  39   7                    }
+  40   6                  }
+  41   5                }
+  42   4                cntACC=0;    
+  43   4              }
+  44   3            }
+  45   2        }
+  46   1        else
+  47   1        {
+  48   2          accDEB=0;
+  49   2        }   
+  50   1      }
+  51          
+  52          
+  53          void Zero_TimeCounter()
+  54          {
+C51 COMPILER V9.57.0.0   ZERO                                                              05/19/2022 16:44:03 PAGE 2   
+
+  55   1        if(F_Zero1s)
+  56   1        {
+  57   2          F_Zero1s = 0; 
+  58   2          
+  59   2          if(Sys_State == State_Clean)
+  60   2          {
+  61   3            CleanTime++;
+  62   3            if(CleanTime >= 180) //清洁模式180秒一循环
+  63   3            {
+  64   4             CleanTime = 0;
+  65   4            }
+  66   3            if(CleanTime < 60) //前60秒
+  67   3            {
+  68   4             F_60s = 1;
+  69   4            }
+  70   3            else               //后120秒
+  71   3            {
+  72   4             F_60s = 0;
+  73   4            }
+  74   3          }
+  75   2            
+  76   2          if(Sys_State == State_ON_Step2)    //记保温时间
+  77   2          {
+  78   3            HeatTime_sec++;
+  79   3            F_Update = 1;
+  80   3            F_Sec = ~F_Sec;
+  81   3            if(HeatTime_sec == 10)   //测试用
+  82   3            {
+  83   4              F_Update = 1;
+  84   4              HeatTime_sec = 0;
+  85   4              HeatTime_Min++;
+  86   4              if(HeatTime_Min  == 60)
+  87   4              {
+  88   5                HeatTime_Hour++;
+  89   5                F_Update = 1;
+  90   5              }
+  91   4            }
+  92   3          }
+  93   2          
+  94   2          
+  95   2          if(!(F_setTime && ((F_SetProg == 0) && (F_SetOFF == 0)))) //计时
+  96   2          {      
+  97   3            CurrentTime_Sec++; 
+  98   3            if(Sys_State != State_ON_Step2)
+  99   3            {
+ 100   4              F_Update = 1;
+ 101   4              F_Sec = ~F_Sec;
+ 102   4            }
+ 103   3            if(CurrentTime_Sec == 10)
+ 104   3            {
+ 105   4              CurrentTime_Sec = 0;
+ 106   4              CurrentTime_Min++;
+ 107   4              if(Sys_State != State_ON_Step2)
+ 108   4              {
+ 109   5                F_Update = 1;
+ 110   5              }
+ 111   4              if(CurrentTime_Min == 60)
+ 112   4              {
+ 113   5                CurrentTime_Min = 0;
+ 114   5                CurrentTime_Hour++;
+ 115   5                if(Sys_State != State_ON_Step2)
+ 116   5                {
+C51 COMPILER V9.57.0.0   ZERO                                                              05/19/2022 16:44:03 PAGE 3   
+
+ 117   6                  F_Update = 1;
+ 118   6                }
+ 119   5                if(CurrentTime_Hour > 24)
+ 120   5                {
+ 121   6                  CurrentTime_Hour = 1;
+ 122   6                }
+ 123   5              }
+ 124   4            }
+ 125   3          }
+ 126   2        }
+ 127   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    228    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

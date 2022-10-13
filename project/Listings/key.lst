@@ -1,0 +1,150 @@
+C51 COMPILER V9.57.0.0   KEY                                                               09/30/2022 08:23:23 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN .\Objects\key.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE C\key.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\C;.\H) DEBUG OBJECTEXTEND PR
+                    -INT(.\Listings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          
+   3          /*-----------------------------------------------------------
+   4          * 函数：void keyscan(void)
+   5          * 功能：按键短按检测函数，10ms跑一次
+   6          * 输入： 无
+   7          * 输出： 无
+   8          ------------------------------------------------------------*/
+   9          void keyscan(void)
+  10          {
+  11   1        P0 &= 0xfb;    //1111 1011   
+  12   1        P0M &= 0xe3;   //1110 0011
+  13   1        P0UR |= 0x0c;  //0000 1100
+  14   1          
+  15   1        keyNEW =0;
+  16   1        if(K1==0)
+  17   1        {keyNEW=keyNEW | 0x01;} 
+  18   1        if(K2==0)
+  19   1        {keyNEW=keyNEW | 0x02;}
+  20   1        if(K3==0)
+  21   1        {keyNEW=keyNEW | 0x04;} 
+  22   1        temp=keyNEW ^keyBUF;
+  23   1        if(keyBUF!=keyNEW)
+  24   1        {
+  25   2          DEB+=1;
+  26   2          if(DEB>=6)
+  27   2          {
+  28   3            DEB=0;
+  29   3            keyBUF=keyNEW;
+  30   3            if(temp & 0x01)  //电源开关
+  31   3            {
+  32   4              if(K1==0)     
+  33   4              { 
+  34   5                fk1DOWN=1;
+  35   5              }
+  36   4              else
+  37   4              {
+  38   5                fk1DOWN=0;
+  39   5                if(fk1LONG)
+  40   5                {
+  41   6                  fk1LONG=0;
+  42   6                }
+  43   5              }
+  44   4            }
+  45   3            if(temp & 0x02)  //振动马达档位切换开关
+  46   3            {
+  47   4              if(K2==0)     
+  48   4              { 
+  49   5                //K2功能------
+  50   5                if(F_Power) //开机时按键有效
+  51   5                {
+  52   6                  F_Turn1 = 1;
+  53   6                  if(Motor1_Mode < 3)
+  54   6                  {
+C51 COMPILER V9.57.0.0   KEY                                                               09/30/2022 08:23:23 PAGE 2   
+
+  55   7                    Motor1_Mode++;
+  56   7                  }
+  57   6                  else
+  58   6                  {
+  59   7                    Motor1_Mode = 0;
+  60   7                  }
+  61   6                }
+  62   5              }
+  63   4            }
+  64   3            if(temp & 0x04)  //转动马达档位切换开关
+  65   3            {
+  66   4              if(K3==0)     
+  67   4              { 
+  68   5                //K3功能------
+  69   5              }
+  70   4            }
+  71   3          }
+  72   2        }
+  73   1        else
+  74   1        {
+  75   2          if(DEB>=2)
+  76   2          {DEB=DEB-2;}
+  77   2          else
+  78   2          {DEB=0;}
+  79   2        }
+  80   1        
+  81   1        P0 |= 0x04;    //0000 0100 
+  82   1        P0M |= 0x1c;   //0001 1100
+  83   1        P0UR &= 0xe7;  //1110 0111
+  84   1      }
+  85          
+  86          
+  87          
+  88          /*-----------------------------------------------------------
+  89          * 函数：void keylongDEAL(void)
+  90          * 功能：按键长按检测函数，10ms跑一次
+  91          * 输入： 无
+  92          * 输出： 无
+  93          ------------------------------------------------------------*/
+  94          void keylongDEAL(void)
+  95          {
+  96   1        if(fk1DOWN)           
+  97   1        {
+  98   2          if(fk1LONG==0)
+  99   2          {
+ 100   3            cntK1LONG++;
+ 101   3            if(cntK1LONG>=150)
+ 102   3            {
+ 103   4              cntK1LONG=0;
+ 104   4              fk1LONG=1;
+ 105   4              if(F_Power)  //按下响应，总开关
+ 106   4              {
+ 107   5                F_Power = 0;
+ 108   5              }
+ 109   4              else
+ 110   4              {
+ 111   5                F_Power = 1;
+ 112   5                F_kuidian = 0;
+ 113   5              }
+ 114   4            }
+ 115   3          }
+ 116   2        }
+C51 COMPILER V9.57.0.0   KEY                                                               09/30/2022 08:23:23 PAGE 3   
+
+ 117   1        else
+ 118   1        {
+ 119   2          cntK1LONG=0;
+ 120   2          
+ 121   2        }
+ 122   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    189    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

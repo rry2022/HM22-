@@ -1,0 +1,626 @@
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE CTR
+OBJECT MODULE PLACED IN .\Objects\ctr.obj
+COMPILER INVOKED BY: D:\keil5_C51\C51\BIN\C51.EXE C\ctr.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\C;.\H) DEBUG OBJECTEXTEND PR
+                    -INT(.\Listings\ctr.lst) TABS(2) OBJECT(.\Objects\ctr.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          
+   3          /*-----------------------------------------------------------
+   4          * 函数：void Ctrl_Charge(void)
+   5          * 功能：充电控制函数，100ms跑一次
+   6          * 输入： 无
+   7          * 输出： 无
+   8          ------------------------------------------------------------*/
+   9          void Ctrl_Charge(void)
+  10          {
+  11   1        if(F_chadian && F_guoyaover && !F_guoya && !F_TempErro && !F_NTCErro && !F_ChargeErro)
+  12   1        {
+  13   2          if(Charge_Mode == Charge_NULL)
+  14   2          {
+  15   3            if(AD_BATV >= BAT_4V15) //电池电压大于4.15V不充电
+  16   3            {
+  17   4              F_ChargeSTA = 1;
+  18   4            } 
+  19   3          } 
+  20   2          
+  21   2          if(!F_ChargeSTA)  //充电中
+  22   2          {
+  23   3            if(!F_TempAnom) //10-49度时的充电
+  24   3            {
+  25   4              if(Charge_Mode == Charge_NULL)
+  26   4              {
+  27   5                if(AD_BATV && (AD_BATV < BAT_3V))
+  28   5                {
+  29   6                  Charge_Mode = Charge_S;
+  30   6                  PW2D = 0x0042;
+  31   6                }
+  32   5                else if((AD_BATV >= BAT_3V) && (AD_BATV < BAT_4V15))
+  33   5                {
+  34   6                  Charge_Mode = Charge_M;
+  35   6                  PW2D = 0x01cd;
+  36   6                }
+  37   5              }
+  38   4              else if(Charge_Mode == Charge_Other)
+  39   4              {
+  40   5                Charge_Mode = Charge_S;
+  41   5                PW2D = 0x0042;
+  42   5              }
+  43   4      
+  44   4              
+  45   4              switch(Charge_Mode)
+  46   4              {
+  47   5                case Charge_S: //涓流充电 电池电压0-3V进
+  48   5                {
+  49   6                  if(AD_ChargeC > (Charge_250mA + 4) )
+  50   6                  {
+  51   7                    if(PW2D)
+  52   7                    {
+  53   8                      PW2D--;
+  54   8                    }
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 2   
+
+  55   7                  }
+  56   6                  else if(AD_ChargeC < (Charge_250mA - 4))
+  57   6                  {
+  58   7                    if(PW2D < 1020)
+  59   7                    {
+  60   8                      PW2D++;
+  61   8                    }
+  62   7                  }
+  63   6                  if(AD_BATV >= RealBat_3V)  //涓流转恒流
+  64   6                  {
+  65   7                    Charge_Mode = Charge_M;
+  66   7                    PW2D = 0x01cd;
+  67   7                    Con_Deb = 0;
+  68   7                  }
+  69   6                }break;
+  70   5                case Charge_M: //恒流充电 电池电压3-4V进
+  71   5                {
+  72   6                  if(AD_ChargeC > Charge_950mA)
+  73   6                  {
+  74   7                    if(PW2D)
+  75   7                    {
+  76   8                      PW2D--;
+  77   8                    }
+  78   7                  }
+  79   6                  else if(AD_ChargeC < (Charge_950mA - 4))
+  80   6                  {
+  81   7                    if(PW2D < 1020)
+  82   7                    {
+  83   8                      PW2D++;
+  84   8                    }
+  85   7                  }
+  86   6                  if(AD_BATV >= RealBat_4V)  //恒流转恒压
+  87   6                  {
+  88   7                    Charge_Mode = Charge_H;
+  89   7                    Con_ChargeVolt = RealBat_4V;
+  90   7                    Charge_cnt_9min = 0;
+  91   7                    ChargeFullDeb = 0;
+  92   7                    Dec_num = 0;
+  93   7                    if(AD_ChargeC <= Charge_790mA) //电流未到950mA转恒压要调节恒压点
+  94   7                    {
+  95   8                      Con_ChargeVolt--;
+  96   8                    }
+  97   7                    if(AD_ChargeC <= Charge_650mA)
+  98   7                    {
+  99   8                      Con_ChargeVolt--;
+ 100   8                    }
+ 101   7                    if(AD_ChargeC <= Charge_520mA)
+ 102   7                    {
+ 103   8                      Con_ChargeVolt--;
+ 104   8                    }
+ 105   7                    if(AD_ChargeC <= Charge_430mA)
+ 106   7                    {
+ 107   8                      Con_ChargeVolt--;
+ 108   8                    }
+ 109   7                  }
+ 110   6                }break;
+ 111   5                case Charge_H: //恒压充电 电池电压4.00V进
+ 112   5                {
+ 113   6                  if(AD_BATV > Con_ChargeVolt)
+ 114   6                  {
+ 115   7                    if(PW2D)
+ 116   7                    {
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 3   
+
+ 117   8                      PW2D--;
+ 118   8                    }
+ 119   7                  }
+ 120   6                  else if(AD_BATV < (Con_ChargeVolt-20))
+ 121   6                  {
+ 122   7                    if(PW2D < 1020)
+ 123   7                    {
+ 124   8                      PW2D++;
+ 125   8                    }
+ 126   7                  }
+ 127   6                  //每隔9分钟恒压点减一
+ 128   6                  if(++Charge_cnt_9min >= 5400) 
+ 129   6                  {
+ 130   7                    Charge_cnt_9min = 0;
+ 131   7                    Con_ChargeVolt--;
+ 132   7                    Dec_num++;  //恒压点减的次数
+ 133   7                  }
+ 134   6                  
+ 135   6                  if(AD_ChargeC < Charge_90mA) //截止电流80-100mA
+ 136   6                  {
+ 137   7                    ChargeFullDeb++;
+ 138   7                    if(ChargeFullDeb >= 600)   //消抖一分钟
+ 139   7                    {
+ 140   8                      ChargeFullDeb = 0;
+ 141   8                      F_ChargeSTA = 1; 
+ 142   8                    }
+ 143   7                  }
+ 144   6                              else
+ 145   6                  {
+ 146   7                    if(ChargeFullDeb >= 10)
+ 147   7                    {
+ 148   8                      ChargeFullDeb -= 10; //值较大一次减10
+ 149   8                    }
+ 150   7                    else
+ 151   7                    {
+ 152   8                      ChargeFullDeb = 0;
+ 153   8                    }
+ 154   7                  }
+ 155   6                }break;
+ 156   5                default: break;
+ 157   5              }
+ 158   4            }
+ 159   3            else  //0-10,49-54温度下的涓流充电
+ 160   3            {
+ 161   4              Charge_Mode = Charge_Other;
+ 162   4              if(AD_ChargeC > (Charge_250mA + 4))
+ 163   4              {
+ 164   5                if(PW2D)
+ 165   5                {
+ 166   6                  PW2D--;
+ 167   6                }
+ 168   5              }
+ 169   4              else if(AD_ChargeC < (Charge_250mA - 4))
+ 170   4              {
+ 171   5                if(PW2D < 1020)
+ 172   5                {
+ 173   6                  PW2D++;
+ 174   6                }
+ 175   5              }
+ 176   4            }
+ 177   3            
+ 178   3            CHARGEON;       //开充电
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 4   
+
+ 179   3            
+ 180   3          }
+ 181   2          else                     //F_ChargeSTA = 1,充满电
+ 182   2          {
+ 183   3            CHARGEOFF;             //关充电
+ 184   3            if(AD_BATV <= BAT_3V9) //电压降3.9V后继续充电
+ 185   3            {
+ 186   4              BAT3V9Deb++;
+ 187   4              if(BAT3V9Deb >= 20)  //消抖
+ 188   4              {
+ 189   5                BAT3V9Deb = 0;
+ 190   5                F_ChargeSTA = 0;
+ 191   5                Charge_Mode = Charge_NULL;
+ 192   5              }
+ 193   4            }
+ 194   3            else
+ 195   3            {
+ 196   4              BAT3V9Deb = 0;
+ 197   4            }
+ 198   3          }
+ 199   2        }
+ 200   1        else
+ 201   1        {
+ 202   2          CHARGEOFF; //停止充电
+ 203   2        }
+ 204   1      }
+ 205          
+ 206          /*-----------------------------------------------------------
+ 207          * 函数：void Ctrl_LED(void)
+ 208          * 功能：LED控制函数，125ms跑一次
+ 209          * 输入： 无
+ 210          * 输出： 无
+ 211          ------------------------------------------------------------*/
+ 212          void Ctrl_LED(void)
+ 213          {
+ 214   1        if(F_Power) //开机
+ 215   1        {
+ 216   2          if(F_NTCErro || F_TempHigh)
+ 217   2          {
+ 218   3            LEDBlue_OFF;  //4HZ
+ 219   3            LEDRedTurn;
+ 220   3            if(LED_Mode != 1)
+ 221   3            {
+ 222   4              LED_Mode = 1;
+ 223   4              cnt_3s = 0;
+ 224   4            }     
+ 225   3            if(++cnt_3s >= 24)
+ 226   3            {
+ 227   4              cnt_3s = 0;
+ 228   4              F_Power = 0;  //异常显示3S后关机
+ 229   4            }     
+ 230   3          }
+ 231   2          else
+ 232   2          {
+ 233   3            if(!F_diya)   //电压3.3-4.2V  蓝灯长亮
+ 234   3            {
+ 235   4              LED_Mode = 2;
+ 236   4              LEDRed_OFF;
+ 237   4              LEDBlue_ON; //蓝灯常亮
+ 238   4            }
+ 239   3            else          //低压红灯2HZ闪烁
+ 240   3            {
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 5   
+
+ 241   4              if(LED_Mode != 3)
+ 242   4              {
+ 243   5                LED_Mode = 3;
+ 244   5                LEDDeb = 0;
+ 245   5              }
+ 246   4              if(++LEDDeb >= 2)
+ 247   4              {
+ 248   5                LEDDeb = 0;
+ 249   5                LEDBlue_OFF;
+ 250   5                LEDRedTurn;
+ 251   5              }         
+ 252   4            }
+ 253   3          }
+ 254   2        }
+ 255   1        else        //关机
+ 256   1        {
+ 257   2          if(F_guoya || F_NTCErro || F_TempErro || F_ChargeErro)
+ 258   2          {
+ 259   3            LEDBlue_OFF;
+ 260   3            LEDRedTurn;
+ 261   3            if(LED_Mode != 1)
+ 262   3            {
+ 263   4              LED_Mode = 1;
+ 264   4              cnt_3s = 0;
+ 265   4            }
+ 266   3            if(++cnt_3s >= 24)
+ 267   3            {
+ 268   4              cnt_3s = 0;
+ 269   4            }     
+ 270   3          }
+ 271   2          else
+ 272   2          {
+ 273   3            if(F_chadian)
+ 274   3            {
+ 275   4              if(F_ChargeSTA || F_ChargeFull) //充满电
+ 276   4              {
+ 277   5                LED_Mode = 2;
+ 278   5                LEDRed_OFF;
+ 279   5                LEDBlue_ON; //蓝灯常亮
+ 280   5              }
+ 281   4              else
+ 282   4              {    //涓流充电
+ 283   5                if((Charge_Mode == Charge_S) || (Charge_Mode == Charge_Other)) 
+ 284   5                {
+ 285   6                  if(LED_Mode != 4)
+ 286   6                  {
+ 287   7                    LED_Mode = 4;
+ 288   7                    LEDDeb = 0;
+ 289   7                  }         
+ 290   6                  if(++LEDDeb >= 16) //0.5HZ
+ 291   6                  {
+ 292   7                    LEDDeb = 0;
+ 293   7                    LEDRed_OFF;
+ 294   7                    LEDBlueTurn; //闪烁
+ 295   7                  }
+ 296   6                }  //恒流、恒压充电
+ 297   5                if(Charge_Mode == Charge_M)
+ 298   5                {
+ 299   6                  if(LED_Mode != 5)
+ 300   6                  {
+ 301   7                    LED_Mode = 5;
+ 302   7                    LEDDeb = 0;
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 6   
+
+ 303   7                  }
+ 304   6                  if(++LEDDeb >= 4) //1HZ
+ 305   6                  {
+ 306   7                    LEDDeb = 0;
+ 307   7                    LEDRed_OFF;
+ 308   7                    LEDBlueTurn;  //闪烁
+ 309   7                  }           
+ 310   6                }  //恒压充电---测试用
+ 311   5                if(Charge_Mode == Charge_H)
+ 312   5                {
+ 313   6                  LED_Mode = 2;
+ 314   6                  LEDBlue_OFF;
+ 315   6                  LEDRed_ON; //红灯常亮
+ 316   6                }
+ 317   5              }
+ 318   4            }
+ 319   3            else
+ 320   3            {
+ 321   4              LED_Mode = 0;
+ 322   4              LEDBlue_OFF;
+ 323   4              LEDRed_OFF;
+ 324   4            }
+ 325   3          }
+ 326   2        }
+ 327   1      }
+ 328          
+ 329          
+ 330          /*-----------------------------------------------------------
+ 331          * 函数：void Motor1_Ctrl(void)
+ 332          * 功能：振动电机控制函数，100ms跑一次
+ 333          * 输入： 无
+ 334          * 输出： 无
+ 335          ------------------------------------------------------------*/
+ 336          void Motor1_Ctrl(void)
+ 337          {
+ 338   1        if(F_Power && !F_NTCErro && !F_TempHigh)
+ 339   1        { 
+ 340   2          switch(Motor1_Mode)
+ 341   2          {
+ 342   3            case Motor1_L:  //50%
+ 343   3            {
+ 344   4              MOTOR1ON; //开马达
+ 345   4              if(F_Turn1)
+ 346   4              {
+ 347   5                F_Turn1 = 0;
+ 348   5                if((AD_BATV > BAT_3V) && (AD_BATV <= BAT_3V3))
+ 349   5                {
+ 350   6                  PW12D = 381;
+ 351   6                }
+ 352   5                else if((AD_BATV > BAT_3V3) && (AD_BATV <= BAT_3V6))
+ 353   5                {
+ 354   6                  PW12D = 348;
+ 355   6                }
+ 356   5                else if((AD_BATV > BAT_3V6) && (AD_BATV <= BAT_3V9))
+ 357   5                {
+ 358   6                  PW12D = 320;
+ 359   6                }
+ 360   5                else if((AD_BATV > BAT_3V9) && (AD_BATV <= BAT_4V2))
+ 361   5                {
+ 362   6                  PW12D = 296;
+ 363   6                }
+ 364   5              }
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 7   
+
+ 365   4              if((AD_BATV - AD_M1V) <= M1_1V5)
+ 366   4              {
+ 367   5                if(PW12D < 790)
+ 368   5                {
+ 369   6      //            PW12D++;
+ 370   6                  PW12D += 2;
+ 371   6                }
+ 372   5              }
+ 373   4              else
+ 374   4              {
+ 375   5      //          if(PW12D)
+ 376   5      //          {
+ 377   5      //            PW12D--;
+ 378   5      //          }
+ 379   5                if(PW12D > 2)
+ 380   5                {
+ 381   6                  PW12D -= 2;
+ 382   6                }
+ 383   5              }
+ 384   4            }break;
+ 385   3            case Motor1_M:  //75%
+ 386   3            {
+ 387   4              MOTOR1ON;  //开马达
+ 388   4              if(F_Turn1)
+ 389   4              {
+ 390   5                F_Turn1 = 0;
+ 391   5                if((AD_BATV > BAT_3V) && (AD_BATV <= BAT_3V3))
+ 392   5                {
+ 393   6                  PW12D = 571;
+ 394   6                }
+ 395   5                else if((AD_BATV > BAT_3V3) && (AD_BATV <= BAT_3V6))
+ 396   5                {
+ 397   6                  PW12D = 522;
+ 398   6                }
+ 399   5                else if((AD_BATV > BAT_3V6) && (AD_BATV <= BAT_3V9))
+ 400   5                {
+ 401   6                  PW12D = 480;
+ 402   6                }
+ 403   5                else if((AD_BATV > BAT_3V9) && (AD_BATV <= BAT_4V2))
+ 404   5                {
+ 405   6                  PW12D = 444;
+ 406   6                }
+ 407   5              }
+ 408   4              if((AD_BATV - AD_M1V) <= M1_2V25)
+ 409   4              {
+ 410   5                if(PW12D < 790)
+ 411   5                {
+ 412   6      //            PW12D++;
+ 413   6                  PW12D += 2;
+ 414   6                }
+ 415   5              }
+ 416   4              else
+ 417   4              {
+ 418   5      //          if(PW12D > 2)
+ 419   5      //          {
+ 420   5      //            PW12D--;
+ 421   5      //          }
+ 422   5                if(PW12D > 2)
+ 423   5                {
+ 424   6                  PW12D -= 2;
+ 425   6                }
+ 426   5              }
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 8   
+
+ 427   4            }break;
+ 428   3            case Motor1_H:  //100%
+ 429   3            {
+ 430   4              MOTOR1ON;  //开马达
+ 431   4              if(F_Turn1)
+ 432   4              {
+ 433   5                F_Turn1 = 0;
+ 434   5                if((AD_BATV > BAT_3V) && (AD_BATV <= BAT_3V3))
+ 435   5                {
+ 436   6                  PW12D = 762;
+ 437   6                }
+ 438   5                else if((AD_BATV > BAT_3V3) && (AD_BATV <= BAT_3V6))
+ 439   5                {
+ 440   6                  PW12D = 696;
+ 441   6                }
+ 442   5                else if((AD_BATV > BAT_3V6) && (AD_BATV <= BAT_3V9))
+ 443   5                {
+ 444   6                  PW12D = 640;
+ 445   6                }
+ 446   5                else if(AD_BATV > BAT_3V9)
+ 447   5                {
+ 448   6                  PW12D = 593;
+ 449   6                }
+ 450   5              }
+ 451   4              if((AD_BATV - AD_M1V) <= M1_3V)
+ 452   4              {
+ 453   5                if(PW12D < 790)
+ 454   5                {
+ 455   6      //            PW12D++;
+ 456   6                  PW12D += 2;
+ 457   6                }
+ 458   5              }
+ 459   4              else
+ 460   4              {
+ 461   5      //          if(PW12D > 2)
+ 462   5      //          {
+ 463   5      //            PW12D--;
+ 464   5      //          }
+ 465   5                if(PW12D > 2)
+ 466   5                {
+ 467   6                  PW12D -= 2;
+ 468   6                }
+ 469   5              }
+ 470   4            }break;
+ 471   3            default: 
+ 472   3            {
+ 473   4              MOTOR1OFF; //关振动电机
+ 474   4            }break;     
+ 475   3          }
+ 476   2        }
+ 477   1        else
+ 478   1        {
+ 479   2          MOTOR1OFF; //关振动电机
+ 480   2        }
+ 481   1      }
+ 482          
+ 483          ///*-----------------------------------------------------------
+ 484          //* 函数：void Motor2_Ctrl(void)
+ 485          //* 功能：转动电机控制函数，100ms跑一次
+ 486          //* 输入： 无
+ 487          //* 输出： 无
+ 488          //------------------------------------------------------------*/
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 9   
+
+ 489          //void Motor2_Ctrl(void)
+ 490          //{
+ 491          //  if(F_Power && !F_NTCErro && !F_TempHigh)
+ 492          //  {
+ 493          //    switch(Motor2_Mode)
+ 494          //    {
+ 495          //      case Motor2_L:   //80%低速
+ 496          //      {
+ 497          //        if(F_Turn2)
+ 498          //        {
+ 499          //          F_Turn2 = 0;
+ 500          //          PW2D = 0x00;
+ 501          //          F_Direction = 1;
+ 502          //        }
+ 503          //        if(F_Direction)
+ 504          //        {
+ 505          //          MOTOR2ON_POS; //电机正转
+ 506          //          if(++Motor2_30s >= 300)
+ 507          //          {
+ 508          //            Motor2_30s = 0;
+ 509          //            F_Direction = 0;
+ 510          //          }           
+ 511          //        }
+ 512          //        else
+ 513          //        {
+ 514          //          MOTOR2ON_NEG; //电机反转
+ 515          //          if(++Motor2_30s >= 300)
+ 516          //          {
+ 517          //            Motor2_30s = 0;
+ 518          //            F_Direction = 1;
+ 519          //          }           
+ 520          //        }
+ 521          //      }break;
+ 522          //      case Motor2_M:   //100%高速
+ 523          //      {
+ 524          //        if(F_Turn2)
+ 525          //        {
+ 526          //          F_Turn2 = 0;
+ 527          //          PW2D = 0x00;
+ 528          //          F_Direction = 1;
+ 529          //        }
+ 530          //        if(F_Direction)
+ 531          //        {
+ 532          //          MOTOR2ON_POS; //电机正转
+ 533          //          if(++Motor2_30s >= 300)
+ 534          //          {
+ 535          //            Motor2_30s = 0;
+ 536          //            F_Direction = 0;
+ 537          //          }           
+ 538          //        }
+ 539          //        else
+ 540          //        {
+ 541          //          MOTOR2ON_NEG; //电机反转
+ 542          //          if(++Motor2_30s >= 300)
+ 543          //          {
+ 544          //            Motor2_30s = 0;
+ 545          //            F_Direction = 1;
+ 546          //          }           
+ 547          //        }
+ 548          //      }break;
+ 549          //      case Motor2_H:   //低高速
+ 550          //      {
+C51 COMPILER V9.57.0.0   CTR                                                               09/30/2022 08:23:23 PAGE 10  
+
+ 551          //        if(F_Turn2)
+ 552          //        {
+ 553          //          F_Turn2 = 0;
+ 554          //          PW2D = 0x00;
+ 555          //          F_Direction = 1;
+ 556          //        }
+ 557          //        if(F_Direction)
+ 558          //        {
+ 559          //          MOTOR2ON_POS; //电机正转
+ 560          //          if(++Motor2_5s >= 50)
+ 561          //          {
+ 562          //            Motor2_5s = 0;
+ 563          //            F_Direction = 0;
+ 564          //            PW2D = 0x00;
+ 565          //          }           
+ 566          //        }
+ 567          //        else
+ 568          //        {
+ 569          //          MOTOR2ON_NEG; //电机反转
+ 570          //          if(++Motor2_5s >= 50)
+ 571          //          {
+ 572          //            Motor2_5s = 0;
+ 573          //            F_Direction = 1;
+ 574          //            PW2D = 0x00;
+ 575          //          }           
+ 576          //        }
+ 577          //      }break;
+ 578          //      default:
+ 579          //      {
+ 580          //        MOTOR2OFF; //关电机
+ 581          //      }break;
+ 582          //    }
+ 583          //  }
+ 584          //}
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1524    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
